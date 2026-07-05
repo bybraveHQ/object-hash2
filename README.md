@@ -56,6 +56,15 @@ Changed:
 - `Buffer` / `Uint8Array` / `Uint8ClampedArray` / `ArrayBuffer` / `DataView` values (unified byte serialization, identical across platforms);
 - hashes produced in the browser (they now match Node.js — that's the point).
 
+## Migrating from object-hash
+
+```diff
+- const hash = require('object-hash');
++ const hash = require('@bybrave/object-hash2');
+```
+
+The API is identical; `@types/object-hash` is no longer needed (types ship with the package). If you persist hashes, read the compatibility section above: regenerate stored hashes on upgrade, or use `respectType: false` where you need values byte-identical to 3.x. Node.js ≥ 18.
+
 ## Compatibility
 
 - API is unchanged — drop-in replacement for `object-hash`: `hash()`, `hash.sha1()`, `hash.keys()`, `hash.MD5()`, `hash.keysMD5()`, `hash.writeToStream()`.
