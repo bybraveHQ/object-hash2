@@ -1,0 +1,67 @@
+{
+  "name": "@bybrave/object-hash2",
+  "version": "4.0.0",
+  "description": "Maintained fork of object-hash — generate hashes from javascript objects in node and the browser. Identical hashes in both, repeated references fixed, 2x faster, 2 KB browser bundle.",
+  "author": "bybrave (https://github.com/bybraveHQ)",
+  "contributors": [
+    "Scott Puleo (author of the original object-hash)"
+  ],
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.js"
+    },
+    "./package.json": "./package.json",
+    "./dist/*": "./dist/*"
+  },
+  "browser": {
+    "./lib/crypto-sink.js": "./lib/crypto-sink-browser.js"
+  },
+  "files": [
+    "index.js",
+    "index.mjs",
+    "index.d.ts",
+    "lib",
+    "dist"
+  ],
+  "scripts": {
+    "build": "esbuild index.js --bundle --format=iife --global-name=objectHash --outfile=dist/object_hash.js && esbuild index.js --bundle --minify --format=iife --global-name=objectHash --outfile=dist/object_hash.min.js",
+    "test": "npm run build && npm run test-node && npm run test-dist && npm run test-types",
+    "test-node": "node --test test/",
+    "test-dist": "node scripts/dist-smoke.js",
+    "test-types": "tsc",
+    "benchmark": "node scripts/benchmark.js",
+    "prepublishOnly": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bybraveHQ/object-hash2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bybraveHQ/object-hash2/issues"
+  },
+  "homepage": "https://github.com/bybraveHQ/object-hash2#readme",
+  "keywords": [
+    "object",
+    "hash",
+    "sha1",
+    "md5",
+    "sha256",
+    "object-hash",
+    "esm",
+    "typescript"
+  ],
+  "license": "MIT",
+  "funding": "https://ko-fi.com/bybrave",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.0"
+  }
+}
