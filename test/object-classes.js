@@ -1,0 +1,118 @@
+'use strict';
+
+var describe = require('node:test').describe;
+var it = require('node:test').it;
+var before = require('node:test').before;
+var beforeEach = require('node:test').beforeEach;
+var afterEach = require('node:test').afterEach;
+
+var assert = require('assert');
+var hash = require('../index');
+var validSha1 = /^[0-9a-f]{40}$/i;
+
+describe('hash() objects with custom class names', function() {
+  var builtinToString;
+  beforeEach(function() {
+    builtinToString = Object.prototype.toString;
+    Object.prototype.toString = function() {
+      if (this && typeof this.__className !== 'undefined') {
+        return this.__className;
+      }
+      
+      return builtinToString.apply(this, arguments);
+    };
+  });
+  
+  afterEach(function() {
+    Object.prototype.toString = builtinToString;
+  });
+  
+  it('should throw when trying to hash an unknown object', function() {
+    assert.throws(function() {
+      hash({a:1, __className: '[object Foo]'});
+    }, /Unknown object type "foo"/);
+    
+    assert.throws(function() {
+      hash({a:1, __className: 'Foo'});
+    }, /Unknown object type/);
+  });
+
+  it('should not throw when trying to hash an unknown object with ignoreUnknown', function() {
+    var opt = {ignoreUnknown: true};
+    
+    assert.ok(validSha1.test(hash({a:1, __className: '[object Foo]'}, opt)));
+  });
+
+  it('should not throw when trying to hash a weirdly-named object with ignoreUnknown', function() {
+    var opt = {ignoreUnknown: true};
+    
+    assert.ok(validSha1.test(hash({a:1, __className: 'Foo'}, opt)));
+  });
+  
+  it('should not delve further into a number of native types', function() {
+    var nativeTypes = [
+      'domwindow',
+      'process', 'timer', 'pipe', 'tcp', 'udp', 'tty', 'statwatcher',
+      'securecontext', 'connection', 'zlib', 'context', 'nodescript',
+      'httpparser', 'signal', 'fsevent', 'tlswrap'
+    ];
+
+    for (var i = 0; i < nativeTypes.length; i++) {
+      var obj = { foobar: 1, __className: '[object ' + nativeTypes[i] + ']' };
+      var serialized = hash(obj, { algorithm: 'passthrough', encoding: 'utf8' });
+      assert.strictEqual(serialized, nativeTypes[i]);
+    }
+  });
+
+  // 'dataview' left the list above on purpose: the original serialized
+  // every DataView as the constant string 'dataview', so any two hashed
+  // equal. They now hash by content, like the other binary types.
+  it('should hash DataView by its bytes', function() {
+    var serialized = hash(new DataView(new Uint8Array([65, 66]).buffer), { algorithm: 'passthrough', encoding: 'utf8' });
+    assert.strictEqual(serialized, 'bytes:2:AB');
+  });
+  
+  it('should hash xml based on its string representation', function() {
+    var obj = {
+      __className: '[object xml]',
+      toString: function() { return 'Bananä' }
+    };
+    
+    var serialized = hash(obj, { algorithm: 'passthrough', encoding: 'utf8' });
+    assert.strictEqual(serialized, 'xml:Bananä');
+  });
+  
+  it('should hash URLs based on its string representation', function() {
+    var obj = {
+      __className: '[object url]',
+      toString: function() { return 'https://example.com/' }
+    };
+    
+    var serialized = hash(obj, { algorithm: 'passthrough', encoding: 'utf8' });
+    assert.strictEqual(serialized, 'url:https://example.com/');
+  });
+  
+  it('should not hash blobs without ignoreUnknown', function() {
+    var obj = {
+      __className: '[object blob]'
+    };
+    
+    assert.throws(function() {
+      hash(obj);
+    }, /not supported/);
+  });
+  
+  it('should ignore blobs with ignoreUnknown', function() {
+    var obj = {
+      __className: '[object blob]'
+    };
+    
+    var serialized = hash(obj, {
+      algorithm: 'passthrough',
+      encoding: 'utf8',
+      ignoreUnknown: true
+    });
+    
+    assert.strictEqual(serialized, '[blob]');
+  });
+});
